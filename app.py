@@ -32,39 +32,49 @@ def predict():
     try:
         data = request.get_json()
 
-        # Extract user input (no price input)
+        # Input
         purpose = data['purpose']
         city = data['city']
         location = data['location']
         property_type = data['property_type']
         bedrooms = int(data['bedrooms'])
-        baths = int(data['bathrooms'])
+        bathrooms = int(data['bathrooms'])
         area = float(data['Area_in_Marla'])
 
-        # Encode categorical features using OneHotEncoder (all 4)
-        categorical_input = [[location, property_type, city, purpose]]
-        encoded_cats = ohe.transform(categorical_input)
+        # Create DataFrame
+        input_df = pd.DataFrame({
+            'city': [city],
+            'location': [location],
+            'purpose': [purpose],
+            'property_type': [property_type],
+            'bedrooms': [bedrooms],
+            'baths': [bathrooms],
+            'Area_in_Marla': [area]
+        })
 
-        # Scale numerical features (excluding price)
-        numerical_input = [[baths, bedrooms, area, 0]]  # dummy price=0
-        scaled_nums = scaler.transform(numerical_input)
-        scaled_nums = scaled_nums[:, :3]
+        # Encode categorical
+        cat_cols = ['purpose','location','property_type', 'city']
+        X_cat = ohe.transform(input_df[cat_cols])
+        X_cat_df = pd.DataFrame(X_cat, columns=ohe.get_feature_names_out(cat_cols))
 
-        # Combine features in the same order used during model training
-        final_input = np.concatenate([scaled_nums, encoded_cats], axis=None).reshape(1, -1)
+        # Scale numerical
+        num_cols = ['baths','bedrooms','Area_in_Marla']
+        X_num = scaler.transform(input_df[num_cols])
+        X_num_df = pd.DataFrame(X_num, columns=num_cols)
 
-        # Predict price_per_marla
-        predicted_price_per_marla = model.predict(final_input)[0]
+        # Combine
+        X_final = pd.concat([X_num_df.reset_index(drop=True), X_cat_df.reset_index(drop=True)], axis=1)
 
-        # Since price was scaled during training, we need to reverse the scaling (if needed)
-        # Multiply with area to get actual price (scaled)
-        predicted_scaled_price = predicted_price_per_marla * area
+        # Load feature order
+        with open('feature_names.pkl', 'rb') as f:
+            expected_features = pickle.load(f)
 
-        # Reverse the scaling for the price (if required)
-        # If you scaled the 'price' during training, apply inverse scaling here
-        final_price = round(predicted_scaled_price)
+        # Reorder and fill missing if needed
+        X_final = X_final.reindex(columns=expected_features, fill_value=0)
 
-        return jsonify({'predicted_price': final_price})
+        # Predict
+        pred = model.predict(X_final)[0]
+        return jsonify({'predicted_price': round(pred)})
 
     except Exception as e:
         return jsonify({'error': str(e)})
