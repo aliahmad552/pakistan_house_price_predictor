@@ -2,95 +2,68 @@ from flask import Flask, request, jsonify, render_template
 import pandas as pd
 import pickle
 import numpy as np
-
 app = Flask(__name__)
 
-# Load the pre-trained models and data
+# Load model and encoders
 model = pickle.load(open('xgb.pkl', 'rb'))
 ohe = pickle.load(open('ohe.pkl', 'rb'))
 scaler = pickle.load(open('scaler.pkl', 'rb'))
 
-# Load cleaned data to get available options
-df = pd.read_csv('Cleaned_data.csv')
+# Load dropdown data
+df = pd.read_csv("Cleaned_data.csv")
 
-# Define the exact feature order expected by the model
-CATEGORICAL_FEATURES = ['location', 'property_type', 'city', 'purpose']
-NUMERICAL_FEATURES = ['bedrooms', 'bathrooms', 'Area_in_Marla']
-
-
+# Routes
 @app.route('/')
 def home():
-    # Get unique values for all dropdowns
-    cities = sorted(df['city'].unique().tolist())
-    purposes = sorted(df['purpose'].unique().tolist())
-    property_types = sorted(df['property_type'].unique().tolist())
-    return render_template('index.html',
-                           cities=cities,
-                           purposes=purposes,
-                           property_types=property_types)
-
+    cities = sorted(df['city'].unique())
+    purposes = sorted(df['purpose'].unique())
+    property_types = sorted(df['property_type'].unique())
+    return render_template('index.html', cities=cities, purposes=purposes, property_types=property_types)
 
 @app.route('/get_locations', methods=['POST'])
 def get_locations():
-    city = request.json['city']
-    locations = sorted(df[df['city'] == city]['location'].unique().tolist())
+    data = request.get_json()
+    selected_city = data.get('city')
+    locations = sorted(df[df['city'] == selected_city]['location'].unique())
     return jsonify({'locations': locations})
-
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Get form data
-        data = request.form.to_dict()
+        data = request.get_json()
 
-        # Prepare features in EXACTLY the same order as during training
-        categorical_features = {
-            'location': data['location'],
-            'property_type': data['property_type'],
-            'city': data['city'],
-            'purpose': data['purpose']
-        }
+        # Extract user input
+        purpose = data['purpose']
+        city = data['city']
+        location = data['location']
+        property_type = data['property_type']
+        bedrooms = int(data['bedrooms'])
+        baths = int(data['bathrooms'])
+        area = float(data['Area_in_Marla'])
 
-        numerical_features = {
-            'bedrooms': float(data['bedrooms']),
-            'bathrooms': float(data['bathrooms']),
-            'Area_in_Marla': float(data['Area_in_Marla'])
-        }
+        # Encode categorical features using OneHotEncoder (all 4)
+        categorical_input = [[location, property_type, city, purpose]]
+        encoded_cats = ohe.transform(categorical_input)
 
-        # Create DataFrames maintaining the exact feature order
-        cat_df = pd.DataFrame([categorical_features])[CATEGORICAL_FEATURES]
-        num_df = pd.DataFrame([numerical_features])[NUMERICAL_FEATURES]
+        # Scale numerical features
+        numerical_input = [[baths, bedrooms, area]]
+        scaled_nums = scaler.transform(numerical_input)
 
-        # One Hot Encoding for categorical features
-        cat_encoded = ohe.transform(cat_df).toarray()
+        # Combine features in the same order used during model training
+        final_input = np.concatenate([scaled_nums, encoded_cats], axis=None).reshape(1, -1)
 
-        # Scaling for numerical features
-        num_scaled = scaler.transform(num_df)
+        # Predict price_per_marla
+        predicted_price_per_marla = model.predict(final_input)[0]
 
-        # Combine features
-        final_features = np.concatenate([cat_encoded, num_scaled], axis=1)
+        # Multiply with area to get actual price
+        final_price = round(predicted_price_per_marla * area)
 
-        # Make prediction
-        prediction = model.predict(final_features)
-
-        # Format the prediction for display
-        output = round(prediction[0], 2)
-        formatted_output = "{:,.2f} PKR".format(output)
-
-        return render_template('index.html',
-                               prediction_text=f'Predicted Price: {formatted_output}',
-                               cities=sorted(df['city'].unique().tolist()),
-                               purposes=sorted(df['purpose'].unique().tolist()),
-                               property_types=sorted(df['property_type'].unique().tolist()),
-                               form_data=data)
+        return jsonify({'predicted_price': final_price})
 
     except Exception as e:
-        return render_template('index.html',
-                               prediction_text=f'Error in prediction: {str(e)}',
-                               cities=sorted(df['city'].unique().tolist()),
-                               purposes=sorted(df['purpose'].unique().tolist()),
-                               property_types=sorted(df['property_type'].unique().tolist()))
+        return jsonify({'error': str(e)})
 
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     app.run(debug=True)
