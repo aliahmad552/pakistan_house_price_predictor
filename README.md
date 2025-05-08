@@ -26,6 +26,7 @@ The model is trained on housing data from the following Pakistani cities:
 - Islamabad
 - Karachi
 - Faisalabad
+- Rawalpindi
 
 ### Input Features:
 
@@ -70,7 +71,7 @@ bash
 Copy
 Edit
 python app.py
-Visit http://localhost:5000 to view the app.
+Visit http://localhost:5000 to view the app.```
 
 🗃️ File Structure
 cpp
