@@ -58,7 +58,7 @@ The model is trained on housing data from the following Pakistani cities:
 
 ### 1. Clone the repository
 
-```bash
+
 git clone https://github.com/yourusername/pakistan-house-price-predictor.git
 cd pakistan-house-price-predictor
 2. Install Dependencies
@@ -71,9 +71,9 @@ bash
 Copy
 Edit
 python app.py
-Visit http://localhost:5000 to view the app.```
+Visit http://localhost:5000 to view the app.
 
-🗃️ File Structure
+## 🗃️ File Structure
 cpp
 Copy
 Edit
@@ -88,7 +88,7 @@ Edit
 │   └── index.html
 ├── requirements.txt
 └── README.md
-##🧹 Data Preprocessing Highlights
+## 🧹 Data Preprocessing Highlights
 price_per_marla was engineered as price / area for better regression performance.
 
 Removed outliers and cleaned inconsistent location names.
@@ -101,7 +101,7 @@ Used label mapping for purpose (0 = For Sale, 1 = For Rent)
 
 Scaled numeric columns: bedrooms, bathrooms, Area_in_Marla
 
-##👨‍💻 Author
+## 👨‍💻 Author
 Ali Ahmad
 BS Software Engineering, The Islamia University of Bahawalpur
 📧 frextarr.552@example.com
