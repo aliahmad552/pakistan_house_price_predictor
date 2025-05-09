@@ -1,83 +1,71 @@
-from flask import Flask, request, jsonify, render_template
-import pandas as pd
+from flask import Flask, render_template, request, jsonify
 import pickle
+import pandas as pd
 import numpy as np
+
 app = Flask(__name__)
 
-# Load model and encoders
-model = pickle.load(open('xgb.pkl', 'rb'))
+# Load both models
+sale_model = pickle.load(open('xgb.pkl', 'rb'))
+rent_model = pickle.load(open('xgb_forRent.pkl', 'rb'))
+
+# Load encoder and scaler
 ohe = pickle.load(open('ohe.pkl', 'rb'))
 scaler = pickle.load(open('scaler.pkl', 'rb'))
 
-# Load dropdown data
-df = pd.read_csv("Cleaned_data.csv")
+# Load data for dropdowns
+df = pd.read_csv('Cleaned_data.csv')
+cities = sorted(df['city'].unique())
+property_types = sorted(df['property_type'].unique())
 
-# Routes
 @app.route('/')
-def home():
-    cities = sorted(df['city'].unique())
-    purposes = sorted(df['purpose'].unique())
-    property_types = sorted(df['property_type'].unique())
-    return render_template('index.html', cities=cities, purposes=purposes, property_types=property_types)
+def index():
+    return render_template('index.html', cities=cities, property_types=property_types)
 
-@app.route('/get_locations', methods=['POST'])
-def get_locations():
-    data = request.get_json()
-    selected_city = data.get('city')
-    locations = sorted(df[df['city'] == selected_city]['location'].unique())
+@app.route('/get_locations/<city>')
+def get_locations(city):
+    filtered = df[df['city'] == city]
+    locations = sorted(filtered['location'].unique())
     return jsonify({'locations': locations})
 
-@app.route('/predict', methods=['POST'])
+@app.route('/', methods=['POST'])
 def predict():
-    try:
-        data = request.get_json()
+    city = request.form['city']
+    location = request.form['location']
+    property_type = request.form['property_type']
+    bedrooms = int(request.form['bedrooms'])
+    baths = int(request.form['baths'])
+    area = float(request.form['area'])
+    model_type = request.form['model_type']  # sale or rent
 
-        # Input
-        purpose = data['purpose']
-        city = data['city']
-        location = data['location']
-        property_type = data['property_type']
-        bedrooms = int(data['bedrooms'])
-        bathrooms = int(data['bathrooms'])
-        area = float(data['Area_in_Marla'])
+    # Choose the correct model
+    model = sale_model if model_type == 'sale' else rent_model
 
-        # Create DataFrame
-        input_df = pd.DataFrame({
-            'city': [city],
-            'location': [location],
-            'purpose': [purpose],
-            'property_type': [property_type],
-            'bedrooms': [bedrooms],
-            'baths': [bathrooms],
-            'Area_in_Marla': [area]
-        })
+    # Create input dataframe
+    input_df = pd.DataFrame([{
+        'city': city,
+        'location': location,
+        'property_type': property_type,
+        'bedrooms': bedrooms,
+        'baths': baths,
+        'Area_in_Marla': area
+    }])
 
-        # Encode categorical
-        cat_cols = ['purpose','location','property_type', 'city']
-        X_cat = ohe.transform(input_df[cat_cols])
-        X_cat_df = pd.DataFrame(X_cat, columns=ohe.get_feature_names_out(cat_cols))
+    # Encode categorical columns and scale numeric
+    cat_cols = ['location', 'property_type', 'city']
+    num_cols = ['baths', 'bedrooms', 'Area_in_Marla']
 
-        # Scale numerical
-        num_cols = ['baths','bedrooms','Area_in_Marla']
-        X_num = scaler.transform(input_df[num_cols])
-        X_num_df = pd.DataFrame(X_num, columns=num_cols)
+    encoded_cat = ohe.transform(input_df[cat_cols])
+    scaled_num = scaler.transform(input_df[num_cols])
 
-        # Combine
-        X_final = pd.concat([X_num_df.reset_index(drop=True), X_cat_df.reset_index(drop=True)], axis=1)
+    # Concatenate all features
+    final_input = np.concatenate([encoded_cat, scaled_num], axis=1)
 
-        # Load feature order
-        with open('feature_names.pkl', 'rb') as f:
-            expected_features = pickle.load(f)
+    # Make prediction
+    prediction = int(model.predict(final_input)[0])
+    formatted_price = f"{prediction:,.0f}"
 
-        # Reorder and fill missing if needed
-        X_final = X_final.reindex(columns=expected_features, fill_value=0)
-
-        # Predict
-        pred = model.predict(X_final)[0]
-        return jsonify({'predicted_price': round(pred)})
-
-    except Exception as e:
-        return jsonify({'error': str(e)})
+    return render_template('index.html', cities=cities, property_types=property_types, prediction=formatted_price)
 
 if __name__ == '__main__':
     app.run(debug=True)
