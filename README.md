@@ -104,4 +104,4 @@ Scaled numeric columns: bedrooms, bathrooms, Area_in_Marla
 ## 👨‍💻 Author
 Ali Ahmad
 BS Software Engineering, The Islamia University of Bahawalpur
-📧 frextarr.552@example.com
+📧 aliahmaddawana@example.com
