@@ -9,12 +9,11 @@ This project leverages an XGBoost regression model trained on curated housing da
 
 ## 🚀 Live Demo
 
-🌐 [Rendered App Link](https://your-render-link.com)
+🌐 [Rendered App Link](https://pakistan-homes-price-prediction-1.onrender.com/)
 
 ## 📊 Model Performance
 
-- **Model:** XGBoost Regressor  
-- **R² Score:** 99.9%  
+- **Model:** XGBoost Regressor 
 - **Preprocessing:** OneHotEncoding for categorical features and StandardScaler for numerical features  
 - **Target Variable:** `price`
 
