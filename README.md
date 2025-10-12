@@ -1,6 +1,5 @@
 # 🇵🇰 Pakistan House Price Predictor
 
-<img src="static/images/logo1.png" alt="Pakistan House Price Predictor Logo" width="250"/>
 
 A **machine learning web app** that predicts house prices across **5 major cities of Pakistan**.  
 It uses features like **location, property type, area, bedrooms, and bathrooms** to give an estimated price.  
@@ -16,6 +15,10 @@ Users just need to select the **city**, **location**, **purpose (sale/rent)**, *
 ---
 
 # 📷 Screenshots
+
+### 🏠 Frontend Form  
+<img src="static/images/logo1.png" alt="Pakistan House Price Predictor Form" width="600"/>
+
 
 ### Frontend Form  
 ![Pakistan House Pridictor Predictor Form](static/css/images/logo1.png)  
