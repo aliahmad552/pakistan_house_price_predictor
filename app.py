@@ -2,19 +2,21 @@ from flask import Flask, render_template, request, jsonify
 import pickle
 import pandas as pd
 import numpy as np
+import os
 
 app = Flask(__name__)
 
+working_dir = os.path.dirname(os.path.abspath(__file__))
 # Load both models
-sale_model = pickle.load(open('xgb.pkl', 'rb'))
-rent_model = pickle.load(open('xgb_forRent.pkl', 'rb'))
+sale_model = pickle.load(open(f'{working_dir}/model/xgb.pkl', 'rb'))
+rent_model = pickle.load(open(f'{working_dir}/model/xgb_forRent.pkl', 'rb'))
 
 # Load encoder and scaler
-ohe = pickle.load(open('ohe.pkl', 'rb'))
-scaler = pickle.load(open('scaler.pkl', 'rb'))
+ohe = pickle.load(open(f'{working_dir}/model/ohe.pkl', 'rb'))
+scaler = pickle.load(open(f'{working_dir}/model/scaler.pkl', 'rb'))
 
 # Load data for dropdowns
-df = pd.read_csv('Cleaned_data.csv')
+df = pd.read_csv(f'{working_dir}/model/Cleaned_data.csv')
 cities = sorted(df['city'].unique())
 property_types = sorted(df['property_type'].unique())
 
