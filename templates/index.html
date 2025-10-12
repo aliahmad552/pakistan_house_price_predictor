@@ -1,111 +1,204 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Pakistan House Price Predictor</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pakistan House Price Predictor — AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <meta name="description" content="AI-powered web app to predict house prices in Pakistan based on city, location, and property details." />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
-    <div class="container">
-        <h1>Pakistan House Price Predictor</h1>
 
-        <!-- Model Selection -->
-        <div class="model-buttons">
-            <button onclick="selectModel('sale')">For Sale</button>
-            <button onclick="selectModel('rent')">For Rent</button>
+<body>
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="logo-section">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
+        <div>
+          <h1>Pakistan House Price Predictor</h1>
+          <p class="tagline">AI-Powered Real Estate Insights</p>
+        </div>
+      </div>
+      <button id="helpBtn" class="btn-outline">How it Works</button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="container main-grid">
+    <!-- FORM -->
+    <section class="card form-section fade-in">
+      <h2>🏠 Predict Property Price</h2>
+      <p class="text-muted">Fill in property details to get an AI-generated estimated price.</p>
+
+      <form id="predictForm" method="POST" action="/">
+        <div class="form-group">
+          <label>Purpose</label>
+          <div class="radio-group">
+            <label><input type="radio" name="model_type" value="sale" checked> For Sale</label>
+            <label><input type="radio" name="model_type" value="rent"> For Rent</label>
+          </div>
         </div>
 
-        <!-- Prediction Form -->
-        <form id="predictionForm" method="POST" action="/" class="hidden">
-            <input type="hidden" id="modelType" name="model_type" value="">
+        <div class="form-group">
+          <label>City</label>
+          <select id="city" name="city" required>
+            <option value="" disabled selected>Select City</option>
+            {% for c in cities %}
+              <option value="{{ c }}" {% if city == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-            <label for="city">City:</label>
-            <select id="city" name="city" required>
-                <option value="" disabled selected>Select City</option>
-                {% for city in cities %}
-                    <option value="{{ city }}">{{ city }}</option>
-                {% endfor %}
-            </select>
+        <div class="form-group">
+          <label>Location</label>
+          <select id="location" name="location" required>
+            {% if location %}
+              <option value="{{ location }}">{{ location }}</option>
+            {% else %}
+              <option value="" disabled selected>Choose city first</option>
+            {% endif %}
+          </select>
+        </div>
 
-            <label for="location">Location:</label>
-            <select id="location" name="location" required>
-                <option value="" disabled selected>Select Location</option>
-            </select>
+        <div class="form-group">
+          <label>Property Type</label>
+          <select id="property_type" name="property_type" required>
+            <option value="" disabled selected>Select Property Type</option>
+            {% for p in property_types %}
+              <option value="{{ p }}" {% if property_type == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-            <label for="property_type">Property Type:</label>
-            <select id="property_type" name="property_type" required>
-                <option value="" disabled selected>Select Property Type</option>
-                {% for p in property_types %}
-                    <option value="{{ p }}">{{ p }}</option>
-                {% endfor %}
-            </select>
+        <div class="grid-two">
+          <div class="form-group">
+            <label>Bedrooms</label>
+            <input type="number" id="bedrooms" name="bedrooms" min="0" step="1" value="{{ bedrooms or 1 }}" required>
+          </div>
+          <div class="form-group">
+            <label>Baths</label>
+            <input type="number" id="baths" name="baths" min="0" step="1" value="{{ baths or 1 }}" required>
+          </div>
+        </div>
 
-            <label for="bedrooms">Bedrooms:</label>
-            <input type="number" id="bedrooms" name="bedrooms" required min="0">
+        <div class="form-group">
+          <label>Area (in Marla)</label>
+          <input type="number" id="area" name="area" step="0.01" min="0.01" value="{{ area or '' }}" placeholder="e.g., 5.25" required>
+        </div>
 
-            <label for="baths">Baths:</label>
-            <input type="number" id="baths" name="baths" required min="0">
+        <div class="button-row">
+          <button type="submit" class="btn-primary">Predict</button>
+          <button type="button" id="resetBtn" class="btn-outline">Reset</button>
+        </div>
+      </form>
+    </section>
 
-            <label for="area">Area (in Marla):</label>
-            <input type="number" step="0.1" id="area" name="area" required min="0">
+    <!-- RESULTS -->
+    <section class="card result-section fade-in">
+      {% if prediction %}
+      <h2>💰 Predicted Price</h2>
+      <p class="predicted-value">Rs <span>{{ prediction }}</span></p>
 
-            <button class="predict-btn" type="submit">Predict</button>
-        </form>
+      <div class="details-grid">
+        <p><strong>City:</strong> {{ city }}</p>
+        <p><strong>Location:</strong> {{ location }}</p>
+        <p><strong>Property Type:</strong> {{ property_type }}</p>
+        <p><strong>Bedrooms:</strong> {{ bedrooms }}</p>
+        <p><strong>Baths:</strong> {{ baths }}</p>
+        <p><strong>Area:</strong> {{ area }} Marla</p>
+        <p><strong>Purpose:</strong> {{ model_type|capitalize }}</p>
+      </div>
 
-        {% if prediction %}
-            <div class="result">
-                <h2>Predicted Price: Rs. {{ prediction }}</h2>
-            </div>
-        {% endif %}
+      {% if avg_price %}
+      <hr>
+      <h3>📊 Local Market Insights</h3>
+      <p><strong>Average Price:</strong> Rs {{ avg_price|int }}</p>
+      <p><strong>Range:</strong> Rs {{ min_price|int }} – Rs {{ max_price|int }}</p>
+      <p><strong>Total Listings:</strong> {{ total_listings }}</p>
+
+      <div class="chart-container">
+        <canvas id="priceChart" height="200"></canvas>
+      </div>
+      {% endif %}
+
+      <div class="button-row">
+        <a href="#" class="btn-primary" onclick="window.print();return false;">Print</a>
+        <a href="/" class="btn-outline">New Prediction</a>
+      </div>
+
+      {% else %}
+      <div class="placeholder">
+        <h3>No Prediction Yet</h3>
+        <p class="text-muted">Complete the form to see AI-generated results.</p>
+      </div>
+      {% endif %}
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>Built with ❤️ by <strong>Ali Ahmad</strong> — Data Scientist & AI Engineer</p>
     </div>
+  </footer>
 
-<script>
-    function selectModel(type) {
-        document.getElementById("modelType").value = type;
-        const form = document.getElementById("predictionForm");
-        form.classList.remove("hidden");
-        form.classList.add("fade-in");
-        window.scrollTo({ top: form.offsetTop - 20, behavior: 'smooth' });
+  <script>
+    const citySelect = document.getElementById('city');
+    const locationSelect = document.getElementById('location');
+    const resetBtn = document.getElementById('resetBtn');
+    const helpBtn = document.getElementById('helpBtn');
+
+    async function loadLocations(city) {
+      locationSelect.innerHTML = '<option>Loading...</option>';
+      const res = await fetch('/get_locations/' + encodeURIComponent(city));
+      const data = await res.json();
+      locationSelect.innerHTML = '<option value="" disabled selected>Select Location</option>';
+      data.locations.forEach(loc => {
+        const opt = document.createElement('option');
+        opt.value = loc;
+        opt.textContent = loc;
+        locationSelect.appendChild(opt);
+      });
     }
 
-    const cityDropdown = document.getElementById('city');
-    const locationDropdown = document.getElementById('location');
-
-    cityDropdown.addEventListener('change', () => {
-        const city = cityDropdown.value;
-        fetch(`/get_locations/${city}`)
-            .then(response => response.json())
-            .then(data => {
-                locationDropdown.innerHTML = '<option value="" disabled selected>Select Location</option>';
-                data.locations.forEach(loc => {
-                    const option = document.createElement('option');
-                    option.value = loc;
-                    option.textContent = loc;
-                    locationDropdown.appendChild(option);
-                });
-            });
+    citySelect?.addEventListener('change', (e) => loadLocations(e.target.value));
+    resetBtn?.addEventListener('click', () => {
+      document.getElementById('predictForm').reset();
+      locationSelect.innerHTML = '<option value="" disabled selected>Choose city first</option>';
     });
 
-    window.onload = function () {
-        const predictionBox = document.querySelector('.result');
-        if (predictionBox) {
-            predictionBox.classList.add("fade-in");
+    helpBtn?.addEventListener('click', () => {
+      alert("This AI model predicts estimated property prices in Pakistan based on selected city, location, and property features.");
+    });
 
-            // Show success message
-            const successMsg = document.createElement("div");
-            successMsg.className = "success-message";
-            successMsg.textContent = "🎉 Prediction successful!";
-            document.body.insertBefore(successMsg, predictionBox);
-
-            setTimeout(() => {
-                successMsg.remove();
-            }, 3000);
-
-            predictionBox.scrollIntoView({ behavior: 'smooth' });
+    // --- Chart.js Updated: Use Location Names on X-axis ---
+    {% if price_distribution and location_labels %}
+    const ctx = document.getElementById('priceChart');
+    const prices = {{ price_distribution | tojson }};
+    const labels = {{ location_labels | tojson }};
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Prices (Rs)',
+          data: prices,
+          backgroundColor: 'rgba(46, 125, 255, 0.6)',
+          borderColor: '#2e7dff',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#333', font: { size: 12 } } },
+          y: { beginAtZero: true }
         }
-    };
-</script>
-
+      }
+    });
+    {% endif %}
+  </script>
 </body>
 </html>
