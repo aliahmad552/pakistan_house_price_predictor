@@ -14,20 +14,10 @@ Users just need to select the **city**, **location**, **purpose (sale/rent)**, *
 
 ---
 
-# 📷 Screenshots
-
-### 🏠 Frontend Form  
-<img src="static/images/logo1.png" alt="Pakistan House Price Predictor Form" width="600"/>
-
-
-### Frontend Form  
-![Pakistan House Pridictor Predictor Form](static/css/images/logo1.png)  
-
-
 
 ## 🌐 Live Demo
 
-👉 **Youtube Video Here:** [Pakistan House Price Predictor](https://pakistan-homes-price-prediction-1.onrender.com/)
+👉 **Youtube Video Here:** [Pakistan House Price Predictor](https://youtu.be/2KsVvo6uMa4)
 
 ---
 
