@@ -18,7 +18,7 @@ Users just need to select the **city**, **location**, **purpose (sale/rent)**, *
 # 📷 Screenshots
 
 ### Frontend Form  
-![Pakistan House Pridictor Predictor Form](static/images/logo1.png)  
+![Pakistan House Pridictor Predictor Form](static/css/images/logo1.png)  
 
 
 
@@ -85,3 +85,24 @@ The app currently supports house price predictions for:
 ```bash
 git clone https://github.com/aliahmad552/pakistan_homes_price_prediction.git
 cd pakistan_homes_price_prediction
+```
+### 2. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+### 3. Run the Flask app
+```bash
+python app.py
+
+
+Visit 👉 http://localhost:5000
+```
+ in your browser.
+
+## 👨‍💻 Author
+
+Ali Ahmad
+🎓 BS Software Engineering, The Islamia University of Bahawalpur
+📧 aliahmaddawana@example.com
+
+⭐ If you like this project, give it a star on GitHub!
